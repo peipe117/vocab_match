@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vocab Match - Minecraft Edition</title>
+    
+    <!-- PWA / App Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Vocab Miner">
+    <meta name="theme-color" content="#4a3219">
+    
+    <link rel="manifest" id="manifest-placeholder">
+    <script>
+        const manifest = {
+            "name": "Vocab Match: Minecraft Edition",
+            "short_name": "Vocab Miner",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#1f1812",
+            "theme_color": "#4a3219",
+            "orientation": "portrait",
+            "icons": [{
+                "src": "https://cdn-icons-png.flaticon.com/512/2097/2097276.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            }]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        document.querySelector('#manifest-placeholder')?.setAttribute('href', URL.createObjectURL(blob));
+    </script>
+    
+    <!-- Pixel fonts & Chinese fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Noto+Sans+TC:wght@600;900&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Pixelated global fonts */
+        .font-pixel {
+            font-family: 'Press Start 2P', 'VT323', monospace;
+            text-shadow: 2px 2px 0px #000;
+        }
+        .font-pixel-sub {
+            font-family: 'VT323', monospace;
+        }
+        .mc-text-shadow {
+            text-shadow: 2px 2px 0px #1a1512;
+        }
+        .mc-gold-shadow {
+            text-shadow: 2px 2px 0px #5e4600;
+        }
+
+        /* Minecraft background */
+        body {
+            background-color: #2b1f16;
+            background-image: 
+                radial-gradient(#1f150e 15%, transparent 16%), 
+                radial-gradient(#3a2a1f 15%, transparent 16%);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+            image-rendering: pixelated;
+        }
+
+        /* Minecraft classic stone button */
+        .mc-btn {
+            background-color: #727272;
+            box-shadow: inset -3px -3px 0px 0px #373737, inset 3px 3px 0px 0px #d4d4d4;
+            border: 2px solid #000000;
+            image-rendering: pixelated;
+            position: relative;
+            user-select: none;
+            transition: all 0.05s ease;
+        }
+        .mc-btn:hover {
+            background-color: #8b8b8b;
+        }
+        .mc-btn:active {
+            background-color: #555555;
+            box-shadow: inset 3px 3px 0px 0px #242424, inset -2px -2px 0px 0px #707070;
+            transform: translateY(2px);
+        }
+
+        /* Emerald green button */
+        .mc-btn-green {
+            background-color: #3b8526;
+            box-shadow: inset -3px -3px 0px 0px #1f4714, inset 3px 3px 0px 0px #63cb3e;
+            border: 2px solid #000000;
+        }
+        .mc-btn-green:hover { background-color: #48a52e; }
+        .mc-btn-green:active {
+            background-color: #2c631c;
+            box-shadow: inset 3px 3px 0px 0px #15320d;
+        }
+
+        /* Redstone red button */
+        .mc-btn-red {
+            background-color: #a82525;
+            box-shadow: inset -3px -3px 0px 0px #5a1111, inset 3px 3px 0px 0px #e64a4a;
+            border: 2px solid #000000;
+        }
+        .mc-btn-red:hover { background-color: #c02d2d; }
+
+        /* Minecraft GUI Panels */
+        .mc-panel {
+            background-color: #c6c6c6;
+            border: 3px solid #000000;
+            box-shadow: 
+                inset 3px 3px 0px #ffffff,
+                inset -3px -3px 0px #555555,
+                6px 6px 0px rgba(0, 0, 0, 0.45);
+        }
+        .mc-panel-dark {
+            background-color: #313233;
+            border: 3px solid #000000;
+            box-shadow: 
+                inset 3px 3px 0px #4d4f52,
+                inset -3px -3px 0px #1a1a1c,
+                6px 6px 0px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Hotbar Slot */
+        .mc-slot {
+            background-color: #8b8b8b;
+            border: 2px solid #373737;
+            box-shadow: inset 3px 3px 0px #373737, inset -2px -2px 0px #ffffff;
+        }
+
+        /* 3D Flip Setup */
+        .perspective-1000 { 
+            perspective: 1000px; 
+            -webkit-perspective: 1000px; 
+        }
+        .transform-style-3d { 
+            transform-style: preserve-3d; 
+            -webkit-transform-style: preserve-3d; 
+        }
+        .card-face {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #000;
+            box-shadow: inset 3px 3px 0px rgba(255,255,255,0.4), inset -3px -3px 0px rgba(0,0,0,0.5);
+        }
+        .card-face-back { 
+            transform: rotateY(0deg) translateZ(1px); 
+        }
+        .card-face-front { 
+            transform: rotateY(180deg) translateZ(1px); 
+        }
+        
+        /* Utility class for flipping */
+        .rotate-y-180 { 
+            transform: rotateY(180deg);
+            -webkit-transform: rotateY(180deg);
+        }
+
+        /* Grass Block Texture */
+        .card-grass-block {
+            background-color: #866043;
+            background-image: 
+                linear-gradient(to bottom, #5b8731 0%, #5b8731 22%, #4c7229 22%, #4c7229 32%, transparent 32%),
+                radial-gradient(#563d28 15%, transparent 16%),
+                radial-gradient(#9c704f 15%, transparent 16%);
+            background-size: 100% 100%, 14px 14px, 14px 14px;
+            background-position: 0 0, 0 0, 7px 7px;
+        }
+
+        /* Hurt Animation (Damage flash) */
+        @keyframes mc-hurt {
+            0%, 100% { transform: translateX(0) rotateY(180deg); filter: brightness(1); }
+            20%, 60% { transform: translateX(-6px) rotateY(180deg); filter: sepia(1) saturate(5) hue-rotate(-50deg); }
+            40%, 80% { transform: translateX(6px) rotateY(180deg); filter: sepia(1) saturate(5) hue-rotate(-50deg); }
+        }
+        .animate-mc-hurt .card-face-front {
+            animation: mc-hurt 0.45s ease-in-out;
+            border-color: #b91c1c;
+        }
+
+        /* Ore / Block Themes */
+        .theme-diamond {
+            background: #62b1b3;
+            background-image: radial-gradient(#97f8f9 20%, #44898a 21%, transparent 22%), radial-gradient(#2f6768 18%, transparent 19%);
+            background-size: 20px 20px, 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .theme-gold {
+            background: #d6a73c;
+            background-image: radial-gradient(#ffea6b 20%, #aa8021 21%, transparent 22%), radial-gradient(#7c5d14 18%, transparent 19%);
+            background-size: 20px 20px, 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .theme-emerald {
+            background: #369c47;
+            background-image: radial-gradient(#6bf27e 20%, #206d2d 21%, transparent 22%), radial-gradient(#15491d 18%, transparent 19%);
+            background-size: 20px 20px, 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .theme-redstone {
+            background: #b52c2c;
+            background-image: radial-gradient(#ff6e6e 20%, #7d1717 21%, transparent 22%), radial-gradient(#500f0f 18%, transparent 19%);
+            background-size: 20px 20px, 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .theme-lapis {
+            background: #2546a3;
+            background-image: radial-gradient(#537af3 20%, #162f79 21%, transparent 22%), radial-gradient(#0e1d4d 18%, transparent 19%);
+            background-size: 20px 20px, 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .theme-iron {
+            background: #a39c94;
+            background-image: radial-gradient(#ded7cf 20%, #766f68 21%, transparent 22%), radial-gradient(#544e47 18%, transparent 19%);
+            background-size: 20px 20px, 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        .theme-plank {
+            background: #a07444;
+            background-image: linear-gradient(to bottom, #72502c 2px, transparent 2px), radial-gradient(#53381a 15%, transparent 16%);
+            background-size: 100% 28px, 14px 14px;
+        }
+        .theme-stone {
+            background: #757575;
+            background-image: radial-gradient(#505050 15%, transparent 16%), radial-gradient(#9e9e9e 15%, transparent 16%);
+            background-size: 16px 16px, 16px 16px;
+            background-position: 0 0, 8px 8px;
+        }
+
+        /* XP Bar */
+        .xp-bar-bg {
+            background-color: #0b1a07;
+            border: 2px solid #000;
+            box-shadow: inset 1px 1px 0px #000;
+        }
+        .xp-bar-fill {
+            background: linear-gradient(to bottom, #8bf337 0%, #5ca91d 60%, #3e7b10 100%);
+            box-shadow: 0 0 6px #78e025;
+        }
+
+        @media print {
+            @page { size: portrait; margin: 0.5cm; }
+            body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+    </style>
+</head>
+<body class="touch-manipulation select-none text-slate-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const Icon = ({ name, className }) => {
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        const mcSoundManager = {
+            ctx: null,
+            init: function() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play: function(type) {
+                try {
+                    if (!this.ctx) this.init();
+                    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+                    const t = this.ctx.currentTime;
+
+                    if (type === 'click') {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(320, t);
+                        osc.frequency.exponentialRampToValueAtTime(120, t + 0.04);
+                        gain.gain.setValueAtTime(0.3, t);
+                        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.04);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(t);
+                        osc.stop(t + 0.04);
+
+                    } else if (type === 'flip') {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(240, t);
+                        osc.frequency.exponentialRampToValueAtTime(420, t + 0.06);
+                        gain.gain.setValueAtTime(0.12, t);
+                        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.06);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(t);
+                        osc.stop(t + 0.06);
+
+                    } else if (type === 'match') {
+                        const playOrb = (freq, delay) => {
+                            const o = this.ctx.createOscillator();
+                            const g = this.ctx.createGain();
+                            o.type = 'sine';
+                            o.frequency.setValueAtTime(freq, t + delay);
+                            o.frequency.exponentialRampToValueAtTime(freq * 1.08, t + delay + 0.15);
+                            g.gain.setValueAtTime(0.25, t + delay);
+                            g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.35);
+                            o.connect(g);
+                            g.connect(this.ctx.destination);
+                            o.start(t + delay);
+                            o.stop(t + delay + 0.35);
+                        };
+                        playOrb(880, 0);     // A5
+                        playOrb(1174.66, 0.08); // D6
+
+                    } else if (type === 'wrong') {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(160, t);
+                        osc.frequency.linearRampToValueAtTime(70, t + 0.15);
+                        gain.gain.setValueAtTime(0.28, t);
+                        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(t);
+                        osc.stop(t + 0.2);
+
+                    } else if (type === 'levelUp') {
+                        const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51];
+                        notes.forEach((freq, idx) => {
+                            const o = this.ctx.createOscillator();
+                            const g = this.ctx.createGain();
+                            o.type = 'triangle';
+                            o.frequency.setValueAtTime(freq, t + idx * 0.09);
+                            g.gain.setValueAtTime(0.25, t + idx * 0.09);
+                            g.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.09 + 0.3);
+                            o.connect(g);
+                            g.connect(this.ctx.destination);
+                            o.start(t + idx * 0.09);
+                            o.stop(t + idx * 0.09 + 0.3);
+                        });
+                    }
+                } catch (e) {
+                    console.error("Audio playback error:", e);
+                }
+            }
+        };
+
+        const PINYIN_MAP = {
+            '新': { z: 'ㄒㄧㄣ', p: 'xīn' }, '同': { z: 'ㄊㄨㄥˊ', p: 'tóng' }, '學': { z: 'ㄒㄩㄝˊ', p: 'xué' },
+            '自': { z: 'ㄗˋ', p: 'zì' }, '己': { z: 'ㄐㄧˇ', p: 'jǐ' }, '年': { z: 'ㄋㄧㄢˊ', p: 'nián' },
+            '跟': { z: 'ㄍㄣ', p: 'gēn' }, '比': { z: 'ㄅㄧˇ', p: 'bǐ' },
+            '外': { z: 'ㄨㄞˋ', p: 'wài' }, '公': { z: 'ㄍㄨㄥ', p: 'gōng' }, '以': { z: 'ㄧˇ', p: 'yǐ' },
+            '前': { z: 'ㄑㄧㄢˊ', p: 'qián' }, '工': { z: 'ㄍㄨㄥ', p: 'gōng' }, '作': { z: 'ㄗㄨㄛˋ', p: 'zuò' },
+            '班': { z: 'ㄅㄢ', p: 'bān' }, '後': { z: 'ㄏㄡˋ', p: 'hòu' },
+            '去': { z: 'ㄑㄩˋ', p: 'qù' }, '近': { z: 'ㄐㄧㄣˋ', p: 'jìn' }, '買': { z: 'ㄇㄞˇ', p: 'mǎi' },
+            '東': { z: 'ㄉㄨㄥ', p: 'dōng' }, '西': { z: 'ㄒㄧ', p: 'xī' }, '魚': { z: 'ㄩˊ', p: 'yú' },
+            '還': { z: 'ㄏㄞˊ', p: 'hái' }, '可': { z: 'ㄎㄜˇ', p: 'kě' },
+            '出': { z: 'ㄔㄨ', p: 'chū' }, '先': { z: 'ㄒㄧㄢ', p: 'xiān' }, '週': { z: 'ㄓㄡ', p: 'zhōu' },
+            '末': { z: 'ㄇㄛˋ', p: 'mò' }, '晚': { z: 'ㄨㄢˇ', p: 'wǎn' }, '蛋': { z: 'ㄉㄢˋ', p: 'dàn' },
+            '飯': { z: 'ㄈㄢˋ', p: 'fàn' }, '現': { z: 'ㄒㄧㄢˋ', p: 'xiàn' }, '點': { z: 'ㄉㄧㄢˇ', p: 'diǎn' },
+            '黃': { z: 'ㄏㄨㄤˊ', p: 'huáng' }, '綠': { z: 'ㄌㄩˋ', p: 'lǜ' }, '色': { z: 'ㄙㄜˋ', p: 'sè' },
+            '時': { z: 'ㄕˊ', p: 'shí' }, '候': { z: 'ㄏㄡˋ', p: 'hòu' }, '花': { z: 'ㄏㄨㄚ', p: 'huā' },
+            '子': { z: 'ㄗˇ', p: 'zi' }, '紅': { z: 'ㄏㄨㄥˊ', p: 'hóng' }, '白': { z: 'ㄅㄞˊ', p: 'bái' },
+            '說': { z: 'ㄕㄨㄛ', p: 'shuō' }, '對': { z: 'ㄉㄨㄟˋ', p: 'duì' }, '星': { z: 'ㄒㄧㄥ', p: 'xīng' },
+            '期': { z: 'ㄑㄧˊ', p: 'qí' }, '會': { z: 'ㄏㄨㄟˋ', p: 'huì' }, '每': { z: 'ㄇㄟˇ', p: 'měi' },
+            '給': { z: 'ㄍㄟˇ', p: 'gěi' }, '如': { z: 'ㄖㄨˊ', p: 'rú' }, '果': { z: 'ㄍㄨㄛˇ', p: 'guǒ' },
+            '起': { z: 'ㄑㄧˇ', p: 'qǐ' }, '累': { z: 'ㄌㄟˋ', p: 'lèi' }, '早': { z: 'ㄗㄠˇ', p: 'zǎo' },
+            '洗': { z: 'ㄒㄧˇ', p: 'xǐ' }, '昨': { z: 'ㄗㄨㄛˊ', p: 'zuó' }, '過': { z: 'ㄍㄨㄛˋ', p: 'guò' },
+            '別': { z: 'ㄅㄧㄝˊ', p: 'bié' }, '忘': { z: 'ㄨㄤˋ', p: 'wàng' }, '用': { z: 'ㄩㄥˋ', p: 'yòng' },
+            '臉': { z: 'ㄌㄧㄢˇ', p: 'liǎn' },
+            '送': { z: 'ㄙㄨㄥˋ', p: 'sòng' }, '隻': { z: 'ㄓ', p: 'zhī' }, '狗': { z: 'ㄍㄡˇ', p: 'gǒu' },
+            '帶': { z: 'ㄉㄞˋ', p: 'dài' }, '散': { z: 'ㄙㄢˋ', p: 'sàn' }, '步': { z: 'ㄅㄨˋ', p: 'bù' },
+            '貓': { z: 'ㄇㄠ', p: 'māo' }, '非': { z: 'ㄈㄟ', p: 'fēi' }, '愛': { z: 'ㄞˋ', p: 'ài' },
+            '南': { z: 'ㄋㄢˊ', p: 'nán' }, '北': { z: 'ㄅㄟˇ', p: 'běi' }, '方': { z: 'ㄈㄤ', p: 'fāng' },
+            '裡': { z: 'ㄌㄧˇ', p: 'lǐ' }, '校': { z: 'ㄒㄧㄠˋ', p: 'xiào' }, '門': { z: 'ㄇㄣˊ', p: 'mén' },
+            '口': { z: 'ㄎㄡˇ', p: 'kǒu' }, '因': { z: 'ㄧㄣ', p: 'yīn' }, '為': { z: 'ㄨㄟˋ', p: 'wèi' },
+            '所': { z: 'ㄙㄨㄛˇ', p: 'suǒ' },
+            '本': { z: 'ㄅㄣˇ', p: 'běn' }, '住': { z: 'ㄓㄨˋ', p: 'zhù' }, '退': { z: 'ㄊㄨㄟˋ', p: 'tuì' },
+            '休': { z: 'ㄒㄧㄡ', p: 'xiū' }, '次': { z: 'ㄘˋ', p: 'cì' }, '旅': { z: 'ㄌㄩˇ', p: 'lǚ' },
+            '行': { z: 'ㄒㄧㄥˊ', p: 'xíng' }, '法': { z: 'ㄈㄚˇ', p: 'fǎ' }, '國': { z: 'ㄍㄨㄛˊ', p: 'guó' },
+            '動': { z: 'ㄉㄨㄥˋ', p: 'dòng' }, '物': { z: 'ㄨˋ', p: 'wù' }, '園': { z: 'ㄩㄢˊ', p: 'yuán' },
+            '老': { z: 'ㄌㄠˇ', p: 'lǎo' }, '希': { z: 'ㄒㄧ', p: 'xī' }, '望': { z: 'ㄨㄤˋ', p: 'wàng' },
+            '但': { z: 'ㄉㄢˋ', p: 'dàn' }, '胖': { z: 'ㄆㄤˋ', p: 'pàng' }, '真': { z: 'ㄓㄣ', p: 'zhēn' },
+            '長': { z: 'ㄔㄤˊ', p: 'cháng' },
+            '久': { z: 'ㄐㄧㄡˇ', p: 'jiǔ' }, '話': { z: 'ㄏㄨㄚˋ', p: 'huà' }, '高': { z: 'ㄍㄠ', p: 'gāo' },
+            '課': { z: 'ㄎㄜˋ', p: 'kè' }, '寫': { z: 'ㄒㄧㄝˇ', p: 'xiě' }, '沒': { z: 'ㄇㄟˊ', p: 'méi' },
+            '題': { z: 'ㄊㄧˊ', p: 'tí' }, '定': { z: 'ㄉㄧㄥˋ', p: 'dìng' }, '意': { z: 'ㄧˋ', p: 'yì' },
+            '思': { z: 'ㄙ', p: 'sī' },
+        };
+
+        const TRANSLATIONS = {
+            en: {
+                title: "Vocab Miner",
+                subtitle: "Let's Learn Chinese Vol.2 • MINECRAFT EDITION",
+                adventureMap: "⛏️ Adventure Map (Select Lesson)",
+                customTag: "★[Custom]",
+                voiceOn: "🔊 Voice",
+                voiceMuted: "🔇 Muted",
+                moves: "Moves",
+                restart: "🔄 Restart",
+                miningProgress: "Mining Progress (XP)",
+                ores: "Ores",
+                printScroll: "📜 Print Scroll",
+                addToHotbar: "📲 Add to Hotbar",
+                serverAdventurers: "🧭 Server Adventurers: ",
+                achievementGet: "Achievement Get!",
+                vocabMaster: "[Vocab Master Miner]",
+                winMessage1: "Awesome! You've mined all the words in",
+                winMessage2: "Total moves taken:",
+                startAnother: "Start Another Adventure!",
+                craftingCustom: "Crafting Table: Custom",
+                craftingEdit: "Crafting: Edit Lesson",
+                lessonNameLabel: "Lesson Name (e.g., Adventure 1)",
+                lessonNamePlaceholder: "Enter lesson title...",
+                vocabOreLabel: "Vocab Ore List",
+                vocabOrePlaceholder: "樹(ㄕㄨˋ) 葉(ㄧㄝˋ) 鑽(zuān) 石(shí) 苦力怕",
+                enchantmentGuide: "📜 Enchantment Guide:",
+                enchantmentDesc1: "Add parentheses ",
+                enchantmentDesc2: " after a character for custom pinyin/zhuyin. e.g., ",
+                saveEnchant: "⚡ Save & Enchant",
+                craftLesson: "✨ Craft Lesson",
+                destroyWorld: "Destroy this world?",
+                destroyWarning: "This custom lesson will be thrown into lava! This action cannot be undone.",
+                cancelReturn: "Cancel",
+                destroyConfirm: "Destroy",
+                addToHomeScreen: "Add to Home Screen",
+                iosGuide1: "🍎 iOS Safari:",
+                iosGuide2: "Tap 'Share' icon at the bottom ➔ 'Add to Home Screen'.",
+                androidGuide1: "🤖 Android Chrome:",
+                androidGuide2: "Tap top-right menu ➔ 'Install App' or 'Add to Home Screen'.",
+                desktopGuide1: "💻 Desktop:",
+                desktopGuide2: "Press Ctrl + D to bookmark.",
+                closeGuide: "Close Guide",
+                printTitle: "[ Minecraft Vocab Flashcards ]",
+                printSubtitle1: "Total",
+                printSubtitle2: "words,",
+                printSubtitle3: "cards (Cut along dashed lines)",
+                designer: "Designed by Sophia Wong"
+            },
+            zh: {
+                title: "生字翻翻樂",
+                subtitle: "學華語向前走 第二冊 • 麥塊版",
+                adventureMap: "⛏️ 探險地圖 (選擇課程)",
+                customTag: "★[自訂]",
+                voiceOn: "🔊 語音開",
+                voiceMuted: "🔇 靜音",
+                moves: "步數",
+                restart: "🔄 重洗牌",
+                miningProgress: "採礦收集進度 (XP)",
+                ores: "礦石",
+                printScroll: "📜 列印羊皮紙",
+                addToHotbar: "📲 裝入快捷欄",
+                serverAdventurers: "🧭 當前伺服器冒險者：",
+                achievementGet: "達成成就！",
+                vocabMaster: "【生字礦工大師】",
+                winMessage1: "太棒了！你採集完畢了",
+                winMessage2: "共耗費的翻牌步數：",
+                startAnother: "再來一局探險！",
+                craftingCustom: "工作台：自訂生字",
+                craftingEdit: "合成升級：修改課程",
+                lessonNameLabel: "課程名稱 (例: 探險第一課)",
+                lessonNamePlaceholder: "輸入課程主題名稱...",
+                vocabOreLabel: "生字礦石清單",
+                vocabOrePlaceholder: "樹(ㄕㄨˋ) 葉(ㄧㄝˋ) 鑽(zuān) 石(shí) 苦力怕",
+                enchantmentGuide: "📜 附魔指南：",
+                enchantmentDesc1: "在字後加上小括號 ",
+                enchantmentDesc2: " 可自訂注音/拼音，例如：",
+                saveEnchant: "⚡ 儲存並附魔",
+                craftLesson: "✨ 開始打造課程",
+                destroyWorld: "確定要銷毀世界？",
+                destroyWarning: "此自訂課程將被徹底丟進岩漿！此動作無法復原。",
+                cancelReturn: "取消返回",
+                destroyConfirm: "確認丟棄",
+                addToHomeScreen: "加入主畫面快捷方式",
+                iosGuide1: "🍎 iOS Safari:",
+                iosGuide2: "點擊底部「分享」圖示 ➔ 選擇「加入主畫面」。",
+                androidGuide1: "🤖 Android Chrome:",
+                androidGuide2: "點擊右上角三點選單 ➔ 選擇「安裝應用程式」或「加入主畫面」。",
+                desktopGuide1: "💻 電腦瀏覽器:",
+                desktopGuide2: "按下 Ctrl + D 收藏至書籤欄。",
+                closeGuide: "關閉指南",
+                printTitle: "【 麥塊生字翻翻卡教具 】",
+                printSubtitle1: "共",
+                printSubtitle2: "個生字，計",
+                printSubtitle3: "張方塊卡牌 (請沿虛線裁剪)",
+                designer: "Sophia Wong 教具設計"
+            }
+        };
+
+        const DEFAULT_LESSONS = [
+            { id: 1, nameZh: "第一課：新同學", nameEn: "Lesson 1: New Classmate", words: "新同學自己年跟比" },
+            { id: 2, nameZh: "第二課：爸爸做生意", nameEn: "Lesson 2: Dad's Business", words: "外公以前工作班後" },
+            { id: 3, nameZh: "第三課：超級市場", nameEn: "Lesson 3: Supermarket", words: "去近買東西魚還可" },
+            { id: 4, nameZh: "第四課：想吃漢堡", nameEn: "Lesson 4: Hamburgers", words: "出先週末晚蛋飯現點" },
+            { id: 5, nameZh: "第五課：秋天到了", nameEn: "Lesson 5: Autumn is Coming", words: "黃綠色時候花子紅白" },
+            { id: 6, nameZh: "第六課：農曆新年", nameEn: "Lesson 6: Lunar New Year", words: "說對星期會每給如果" },
+            { id: 7, nameZh: "第七課：早點睡覺", nameEn: "Lesson 7: Sleep Early", words: "起累早洗昨過別忘用臉" },
+            { id: 8, nameZh: "第八課：我的寵物", nameEn: "Lesson 8: My Pets", words: "送隻狗帶散步貓非愛" },
+            { id: 9, nameZh: "第九課：音樂教室", nameEn: "Lesson 9: Music Room is North", words: "南北方裡校門口因為所" },
+            { id: 10, nameZh: "第十課：外公外婆", nameEn: "Lesson 10: Grandparents", words: "本住退休次旅行法國" },
+            { id: 11, nameZh: "第十一課：去動物園", nameEn: "Lesson 11: To the Zoo", words: "動物園老希望但胖真長" },
+            { id: 12, nameZh: "第十二課：網路電話", nameEn: "Lesson 12: Internet Call", words: "久話高課寫沒題定意思" }
+        ];
+
+        const MC_ORE_THEMES = [
+            'theme-diamond',
+            'theme-emerald',
+            'theme-gold',
+            'theme-redstone',
+            'theme-lapis',
+            'theme-iron',
+            'theme-plank',
+            'theme-stone'
+        ];
+
+        const parseLessonWords = (wordString) => {
+            const regex = /([^\s\(\)])(?:\(([^)]*)\))?/g;
+            const matches = [...wordString.matchAll(regex)];
+            return matches.map(match => ({
+                char: match[1],
+                customPinyin: match[2]
+            }));
+        };
+
+        const DeleteConfirmModal = ({ onClose, onConfirm, lang }) => {
+            const t = TRANSLATIONS[lang];
+            return (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs no-print" onClick={onClose}>
+                    <div className="mc-panel w-full max-w-sm p-6 relative" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-14 h-14 bg-red-950/80 border-2 border-red-500 flex items-center justify-center mb-3">
+                                <span className="text-3xl">⚠️</span>
+                            </div>
+                            <h3 className="text-xl font-black text-black mb-2 tracking-wider">{t.destroyWorld}</h3>
+                            <p className="text-stone-800 text-sm mb-6 font-bold leading-relaxed">
+                                {t.destroyWarning}
+                            </p>
+                            
+                            <div className="flex gap-3 w-full">
+                                <button 
+                                    onClick={() => { mcSoundManager.play('click'); onClose(); }} 
+                                    className="mc-btn flex-1 py-3 text-white font-bold tracking-wider">
+                                    {t.cancelReturn}
+                                </button>
+                                <button 
+                                    onClick={() => { mcSoundManager.play('click'); onConfirm(); }} 
+                                    className="mc-btn-red flex-1 py-3 text-white font-bold tracking-wider">
+                                    {t.destroyConfirm}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const CustomLessonModal = ({ onClose, onSave, initialData, lang }) => {
+            const t = TRANSLATIONS[lang];
+            const [name, setName] = useState(initialData ? initialData.name : '');
+            const [words, setWords] = useState(initialData ? initialData.words : '');
+
+            const handleSave = () => {
+                mcSoundManager.play('click');
+                if (!name.trim() || !words.trim()) return;
+                onSave(initialData ? initialData.id : null, name, words);
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs no-print" onClick={onClose}>
+                    <div className="mc-panel w-full max-w-md p-6 relative" onClick={e => e.stopPropagation()}>
+                        <button 
+                            onClick={() => { mcSoundManager.play('click'); onClose(); }} 
+                            className="absolute top-3 right-3 w-8 h-8 mc-btn flex items-center justify-center text-white text-lg font-bold">
+                            ✕
+                        </button>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="w-10 h-10 bg-amber-800 border-2 border-amber-950 flex items-center justify-center text-xl shadow-inner">
+                                ⚒️
+                            </div>
+                            <h3 className="text-xl font-black text-stone-900 tracking-wider">
+                                {initialData ? t.craftingEdit : t.craftingCustom}
+                            </h3>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-black text-stone-800 mb-1 tracking-wider uppercase">{t.lessonNameLabel}</label>
+                                <input 
+                                    type="text" 
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder={t.lessonNamePlaceholder}
+                                    className="w-full p-3 bg-stone-100 border-2 border-black text-stone-900 font-bold focus:outline-none focus:bg-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-stone-800 mb-1 tracking-wider uppercase">{t.vocabOreLabel}</label>
+                                <textarea 
+                                    value={words}
+                                    onChange={(e) => setWords(e.target.value)}
+                                    placeholder={t.vocabOrePlaceholder}
+                                    className="w-full p-3 bg-stone-100 border-2 border-black text-stone-900 font-bold focus:outline-none focus:bg-white h-28 resize-none text-sm"
+                                />
+                                <div className="text-xs text-stone-700 mt-2 bg-stone-300 p-2.5 border border-stone-400">
+                                    <p className="font-bold mb-1">{t.enchantmentGuide}</p>
+                                    <p>{t.enchantmentDesc1}<span className="bg-stone-200 px-1 font-mono font-bold">( )</span>{t.enchantmentDesc2}<b>劍(ㄐㄧㄢˋ)</b> / <b>鎬(gǎo)</b>.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={handleSave} 
+                            className="mc-btn-green w-full mt-5 text-white font-bold py-3 tracking-widest text-base shadow-md">
+                            {initialData ? t.saveEnchant : t.craftLesson}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const InstallGuideModal = ({ onClose, lang }) => {
+            const t = TRANSLATIONS[lang];
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 no-print" onClick={onClose}>
+                    <div className="mc-panel w-full max-w-sm p-6 relative" onClick={e => e.stopPropagation()}>
+                        <button 
+                            onClick={() => { mcSoundManager.play('click'); onClose(); }} 
+                            className="absolute top-3 right-3 w-8 h-8 mc-btn flex items-center justify-center text-white text-lg font-bold">
+                            ✕
+                        </button>
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="text-3xl">📱</span>
+                            <h3 className="text-lg font-black text-stone-900 tracking-wider">{t.addToHomeScreen}</h3>
+                        </div>
+                        <div className="text-stone-800 text-sm leading-relaxed mb-5 space-y-2">
+                            <p className="bg-stone-300/80 p-2 border border-stone-400">
+                                <b>{t.iosGuide1}</b> {t.iosGuide2}
+                            </p>
+                            <p className="bg-stone-300/80 p-2 border border-stone-400">
+                                <b>{t.androidGuide1}</b> {t.androidGuide2}
+                            </p>
+                            <p className="bg-stone-300/80 p-2 border border-stone-400">
+                                <b>{t.desktopGuide1}</b> {t.desktopGuide2}
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => { mcSoundManager.play('click'); onClose(); }} 
+                            className="mc-btn w-full py-3 text-white font-bold tracking-widest">
+                            {t.closeGuide}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const PrintLayout = ({ lesson, lang }) => {
+            const t = TRANSLATIONS[lang];
+            const parsedWords = parseLessonWords(String(lesson.words || ""));
+            const printCards = [];
+            const lessonName = lesson.isCustom ? lesson.name : (lang === 'zh' ? lesson.nameZh : lesson.nameEn);
+
+            parsedWords.forEach((item) => {
+                const { char, customPinyin } = item;
+                printCards.push({ type: 'text', content: char });
+                let pinyinContent;
+                if (customPinyin) {
+                    pinyinContent = customPinyin;
+                } else {
+                    const info = PINYIN_MAP[char] || { z: char, p: '' };
+                    pinyinContent = info.p ? `${info.z} /${info.p}/` : info.z;
+                }
+                printCards.push({ type: 'pinyin', content: pinyinContent });
+            });
+
+            return (
+                <div className="w-full text-black p-4">
+                    <div className="text-center mb-6 border-b-4 border-black pb-4">
+                        <div className="text-xl font-bold tracking-widest text-stone-600 mb-1">{t.printTitle}</div>
+                        <h1 className="text-3xl font-black text-black tracking-wide">{lessonName}</h1>
+                        <p className="text-sm text-stone-500 mt-1">{t.printSubtitle1} {parsedWords.length} {t.printSubtitle2} {printCards.length} {t.printSubtitle3}</p>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4">
+                        {printCards.map((card, idx) => (
+                            <div key={idx} className="aspect-[3/4] border-4 border-dashed border-stone-800 flex flex-col items-center justify-center p-3 relative bg-stone-50">
+                                <span className="absolute top-2 left-2 text-xs font-mono font-bold text-stone-400">#{idx + 1}</span>
+                                {card.type === 'text' ? (
+                                    <span className="text-5xl font-black text-stone-900">{card.content}</span>
+                                ) : (
+                                    <span className="text-xl font-black text-stone-800 text-center leading-relaxed">{card.content}</span>
+                                )}
+                                <div className="absolute bottom-2 text-[10px] font-mono text-stone-400 uppercase tracking-widest">MINECRAFT HANZI</div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-8 text-center text-xs text-stone-500 border-t-2 border-stone-300 pt-3">
+                        {t.subtitle} | {t.designer}
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const [lang, setLang] = useState('zh');
+            const [lessons, setLessons] = useState(DEFAULT_LESSONS);
+            const [currentLessonId, setCurrentLessonId] = useState(1);
+            const [cards, setCards] = useState([]);
+            const [flippedCards, setFlippedCards] = useState([]);
+            const [matchedIds, setMatchedIds] = useState([]);
+            const [isDisabled, setIsDisabled] = useState(false);
+            const [moves, setMoves] = useState(0);
+            const [gameWon, setGameWon] = useState(false);
+            const [showInstallModal, setShowInstallModal] = useState(false);
+            const [showCustomModal, setShowCustomModal] = useState(false);
+            const [showDeleteModal, setShowDeleteModal] = useState(false);
+            const [editingLesson, setEditingLesson] = useState(null);
+            const [shakingCards, setShakingCards] = useState(null);
+            const [isVoiceMuted, setIsVoiceMuted] = useState(false); // TTS State
+
+            const t = TRANSLATIONS[lang];
+
+            useEffect(() => {
+                if (document.getElementById('busuanzi-script')) return;
+                const script = document.createElement('script');
+                script.id = 'busuanzi-script';
+                script.src = "https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js";
+                script.async = true;
+                document.body.appendChild(script);
+            }, []);
+
+            useEffect(() => {
+                const savedLessons = localStorage.getItem('custom_lessons');
+                if (savedLessons) {
+                    try {
+                        const parsed = JSON.parse(savedLessons);
+                        setLessons([...DEFAULT_LESSONS, ...parsed]);
+                    } catch(e) {
+                        console.error(e);
+                    }
+                }
+            }, []);
+
+            useEffect(() => {
+                initializeGame();
+            }, [currentLessonId, lessons]);
+
+            const currentLesson = useMemo(() => {
+                return lessons.find(l => l.id === currentLessonId) || lessons[0];
+            }, [lessons, currentLessonId]);
+
+            const totalPairs = useMemo(() => {
+                return parseLessonWords(String(currentLesson.words || "")).length;
+            }, [currentLesson]);
+
+            const handleSaveCustomLesson = (id, name, words) => {
+                let newLessons;
+                if (id) {
+                    newLessons = lessons.map(l => l.id === id ? { ...l, name, words } : l);
+                } else {
+                    const newId = Date.now();
+                    const newLesson = { id: newId, name: name, words: words, isCustom: true };
+                    newLessons = [...lessons, newLesson];
+                    setCurrentLessonId(newId);
+                }
+                setLessons(newLessons);
+                const customOnly = newLessons.filter(l => l.isCustom);
+                localStorage.setItem('custom_lessons', JSON.stringify(customOnly));
+            };
+
+            const performDelete = () => {
+                const lessonId = currentLessonId;
+                const newLessons = lessons.filter(l => l.id !== lessonId);
+                setLessons(newLessons);
+                setCurrentLessonId(1);
+                const customOnly = newLessons.filter(l => l.isCustom);
+                localStorage.setItem('custom_lessons', JSON.stringify(customOnly));
+                setShowDeleteModal(false);
+            };
+
+            const speakText = (text) => {
+                if (isVoiceMuted || !('speechSynthesis' in window)) return;
+                if (window.speechSynthesis.state === 'suspended') {
+                    window.speechSynthesis.resume();
+                }
+                window.speechSynthesis.cancel();
+                const msg = new SpeechSynthesisUtterance(text);
+                msg.lang = 'zh-TW'; // Keep reading in Chinese
+                msg.rate = 0.85; // Slightly slower for clear learning
+                window.speechSynthesis.speak(msg);
+            };
+
+            const generateCards = (lessonId) => {
+                const targetLesson = lessons.find(l => l.id === lessonId) || lessons[0];
+                const parsedWords = parseLessonWords(String(targetLesson.words || ""));
+                const cardData = [];
+                parsedWords.forEach((item, index) => {
+                    const { char, customPinyin } = item;
+                    const theme = MC_ORE_THEMES[index % MC_ORE_THEMES.length];
+                    
+                    cardData.push({ 
+                        id: `char-${char}-${index}`, 
+                        matchId: index, 
+                        type: 'text', 
+                        content: char, 
+                        baseChar: char, // Used for TTS
+                        theme: theme 
+                    });
+
+                    let pinyinContent;
+                    if (customPinyin) {
+                        pinyinContent = customPinyin;
+                    } else {
+                        const info = PINYIN_MAP[char] || { z: char, p: '' };
+                        pinyinContent = info.p ? `${info.z} /${info.p}/` : info.z;
+                    }
+                    cardData.push({ 
+                        id: `pinyin-${char}-${index}`, 
+                        matchId: index, 
+                        type: 'pinyin',
+                        content: pinyinContent, 
+                        baseChar: char, // Used for TTS
+                        theme: theme 
+                    });
+                });
+                return cardData;
+            };
+
+            const shuffleArray = (array) => {
+                const shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled.map(card => ({ ...card, uniqueId: Math.random().toString(36).substr(2, 9) }));
+            };
+
+            const initializeGame = () => {
+                const rawCards = generateCards(currentLessonId);
+                setCards(shuffleArray(rawCards));
+                setFlippedCards([]);
+                setMatchedIds([]);
+                setMoves(0);
+                setGameWon(false);
+                setIsDisabled(false);
+                setShakingCards(null);
+            };
+
+            const handleCardClick = (card) => {
+                if (isDisabled || flippedCards.some(f => f.uniqueId === card.uniqueId) || matchedIds.includes(card.matchId)) return;
+                
+                mcSoundManager.play('flip');
+                speakText(card.baseChar); // Read the character when flipped
+
+                const newFlipped = [...flippedCards, { uniqueId: card.uniqueId, matchId: card.matchId }];
+                setFlippedCards(newFlipped);
+
+                if (newFlipped.length === 2) {
+                    setIsDisabled(true);
+                    setMoves(prev => prev + 1);
+
+                    if (newFlipped[0].matchId === newFlipped[1].matchId) {
+                        setMatchedIds(prev => {
+                            const next = [...prev, card.matchId];
+                            mcSoundManager.play('match');
+
+                            if (next.length === totalPairs) {
+                                setTimeout(() => {
+                                    setGameWon(true);
+                                    mcSoundManager.play('levelUp');
+                                    confetti({
+                                        particleCount: 160,
+                                        spread: 80,
+                                        colors: ['#55ff55', '#ffff55', '#00aa00', '#55ffff', '#ffaa00'],
+                                        origin: { y: 0.6 }
+                                    });
+                                }, 700);
+                            }
+                            return next;
+                        });
+                        setFlippedCards([]);
+                        setIsDisabled(false);
+                    } else {
+                        setTimeout(() => {
+                            mcSoundManager.play('wrong');
+                            setShakingCards([newFlipped[0].uniqueId, newFlipped[1].uniqueId]);
+                            
+                            setTimeout(() => {
+                                setShakingCards(null);
+                                setFlippedCards([]);
+                                setIsDisabled(false);
+                            }, 500);
+                        }, 750);
+                    }
+                }
+            };
+
+            const gridClass = cards.length <= 16 
+                ? "grid-cols-2 sm:grid-cols-4 max-w-4xl" 
+                : cards.length <= 20 
+                    ? "grid-cols-2 sm:grid-cols-4 md:grid-cols-5 max-w-5xl" 
+                    : "grid-cols-2 sm:grid-cols-3 md:grid-cols-6 max-w-6xl";
+
+            const xpPercentage = totalPairs > 0 ? (matchedIds.length / totalPairs) * 100 : 0;
+
+            return (
+                <div className="min-h-screen flex flex-col items-center">
+                    <div className="hidden print-only">
+                        <PrintLayout lesson={currentLesson} lang={lang} />
+                    </div>
+
+                    <div className="w-full flex flex-col items-center py-4 px-3 md:px-6 pb-20 no-print max-w-6xl">
+                        
+                        <header className="w-full flex flex-col items-center my-3 md:my-5">
+                            <div className="flex items-center gap-2 px-3 py-1 bg-stone-900 border-2 border-stone-600 rounded-none shadow-md mb-2">
+                                <span className="inline-block w-3 h-3 bg-green-500 animate-pulse"></span>
+                                <span className="text-xs font-mono text-stone-300 tracking-wider">{t.subtitle}</span>
+                            </div>
+                            
+                            <div className="relative flex items-center justify-center">
+                                <h1 className="text-3xl md:text-5xl font-black font-pixel tracking-wider text-amber-300 drop-shadow-[0_4px_0_#422006] select-none text-center">
+                                    {t.title}
+                                </h1>
+                            </div>
+                        </header>
+
+                        <div className="w-full max-w-4xl mc-panel p-4 md:p-5 mb-6 text-stone-900">
+                            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                                
+                                <div className="w-full md:w-72">
+                                    <label className="block text-xs font-black text-stone-800 tracking-widest uppercase mb-1">
+                                        {t.adventureMap}
+                                    </label>
+                                    <div className="flex gap-1.5">
+                                        <div className="relative flex-1">
+                                            <select 
+                                                value={currentLessonId}
+                                                onChange={(e) => {
+                                                    mcSoundManager.play('click');
+                                                    setCurrentLessonId(Number(e.target.value));
+                                                }}
+                                                className="w-full appearance-none bg-stone-200 border-2 border-black text-stone-900 font-bold py-2.5 px-3 pr-8 focus:outline-none focus:bg-white text-sm cursor-pointer shadow-inner"
+                                            >
+                                                {lessons.map(lesson => {
+                                                    const displayName = lesson.isCustom ? lesson.name : (lang === 'zh' ? lesson.nameZh : lesson.nameEn);
+                                                    return (
+                                                        <option key={lesson.id} value={lesson.id}>
+                                                            {displayName} {lesson.isCustom ? t.customTag : ''}
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black pointer-events-none text-xs">▼</span>
+                                        </div>
+                                        <button 
+                                            onClick={() => { mcSoundManager.play('click'); setEditingLesson(null); setShowCustomModal(true); }} 
+                                            className="mc-btn px-3 text-white font-bold text-sm" 
+                                            title="Add Custom Lesson">
+                                            ＋
+                                        </button>
+                                        {currentLesson.isCustom && (
+                                            <>
+                                                <button 
+                                                    onClick={() => { mcSoundManager.play('click'); setEditingLesson(currentLesson); setShowCustomModal(true); }} 
+                                                    className="mc-btn px-2.5 text-amber-300 font-bold text-sm" 
+                                                    title="Edit Lesson">
+                                                    ✏️
+                                                </button>
+                                                <button 
+                                                    onClick={() => { mcSoundManager.play('click'); setShowDeleteModal(true); }} 
+                                                    className="mc-btn-red px-2.5 text-white font-bold text-sm" 
+                                                    title="Delete Lesson">
+                                                    🗑️
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+                                    
+                                    <button 
+                                        onClick={() => { mcSoundManager.play('click'); setLang(lang === 'zh' ? 'en' : 'zh'); }}
+                                        className="flex items-center gap-1 bg-sky-200 border-2 border-black px-3 py-1.5 shadow-inner mc-btn cursor-pointer"
+                                        title="Switch Language"
+                                    >
+                                        <span className="text-xs font-black text-stone-800">🌐 {lang === 'zh' ? 'EN' : '中'}</span>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => { mcSoundManager.play('click'); setIsVoiceMuted(!isVoiceMuted); }}
+                                        className="flex items-center gap-1 bg-stone-300 border-2 border-black px-3 py-1.5 shadow-inner mc-btn cursor-pointer"
+                                        title="Toggle Voice"
+                                    >
+                                        <span className="text-xs font-black text-stone-800">{isVoiceMuted ? t.voiceMuted : t.voiceOn}</span>
+                                    </button>
+
+                                    <div className="flex items-center gap-2 bg-stone-300 border-2 border-black px-3 py-1.5 shadow-inner">
+                                        <span className="text-xs font-black text-stone-800">{t.moves}</span>
+                                        <span className="font-pixel text-base font-black text-black">{moves}</span>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => { mcSoundManager.play('click'); initializeGame(); }} 
+                                        className="mc-btn px-4 py-2 text-white font-bold tracking-wider text-sm flex items-center gap-1.5">
+                                        <span>🔄</span>
+                                        <span>{t.restart}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 pt-3 border-t-2 border-stone-400">
+                                <div className="flex justify-between items-center text-xs font-black mb-1 text-stone-800">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-lime-700">❇️</span>
+                                        <span>{t.miningProgress}</span>
+                                    </div>
+                                    <div className="font-pixel text-[11px] text-lime-800 font-black">
+                                        {matchedIds.length} / {totalPairs} {t.ores}
+                                    </div>
+                                </div>
+                                <div className="w-full h-4 xp-bar-bg relative flex items-center">
+                                    <div 
+                                        className="h-full xp-bar-fill transition-all duration-300"
+                                        style={{ width: `${xpPercentage}%` }}
+                                    ></div>
+                                    <div className="absolute inset-0 flex items-center justify-center font-pixel text-[10px] text-white tracking-widest mc-text-shadow font-black">
+                                        LV.{matchedIds.length}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={`grid ${gridClass} gap-3 md:gap-4 w-full place-items-center mb-8`}>
+                            {cards.map((card) => {
+                                const isFlipped = flippedCards.some(f => f.uniqueId === card.uniqueId);
+                                const isMatched = matchedIds.includes(card.matchId);
+                                const isShaking = shakingCards && shakingCards.includes(card.uniqueId);
+
+                                return (
+                                    <div 
+                                        key={card.uniqueId} 
+                                        className={`relative w-full h-32 sm:h-36 md:h-40 cursor-pointer perspective-1000 transition-all duration-500 ${
+                                            isMatched 
+                                                ? 'opacity-0 scale-75 pointer-events-none' 
+                                                : 'opacity-100 scale-100'
+                                        } ${isShaking ? 'animate-mc-hurt' : ''}`}
+                                        onClick={() => handleCardClick(card)}
+                                    >
+                                        <div className={`w-full h-full transition-transform duration-300 transform-style-3d relative ${isFlipped ? 'rotate-y-180' : ''}`}>
+                                            
+                                            <div className="card-face card-face-back card-grass-block flex flex-col items-center justify-center p-2">
+                                                <div className="w-10 h-10 md:w-12 md:h-12 bg-black/40 border-2 border-black flex items-center justify-center shadow-inner">
+                                                    <span className="font-pixel text-amber-300 text-lg md:text-xl font-black drop-shadow-[0_2px_0_#000]">?</span>
+                                                </div>
+                                                <span className="text-[10px] font-mono text-stone-200 mt-2 font-bold tracking-widest drop-shadow-[0_1px_0_#000]">MINE</span>
+                                            </div>
+
+                                            <div className={`card-face card-face-front flex flex-col items-center justify-center p-2 text-center shadow-inner ${card.theme}`}>
+                                                <div className="bg-black/60 border-2 border-black w-full h-full flex flex-col items-center justify-center p-2 rounded-none relative">
+                                                    
+                                                    {/* Voice Replay Button */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            mcSoundManager.play('click');
+                                                            speakText(card.baseChar);
+                                                        }}
+                                                        className="absolute top-1 right-1 w-6 h-6 md:w-7 md:h-7 bg-black/40 hover:bg-black/80 border-2 border-black flex items-center justify-center text-xs text-white shadow-inner transition-colors z-10"
+                                                        title="Read Aloud"
+                                                    >
+                                                        🔊
+                                                    </button>
+
+                                                    {card.type === 'text' ? (
+                                                        <span className="text-4xl md:text-5xl font-black text-white drop-shadow-[0_2px_0_#000] tracking-wider mt-2">
+                                                            {card.content}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-lg md:text-xl font-black text-amber-200 text-center leading-snug drop-shadow-[0_2px_0_#000] mt-2">
+                                                            {card.content}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <footer className="w-full max-w-md mx-auto mt-4 text-center">
+                            <div className="grid grid-cols-3 gap-3 mb-5">
+                                <button 
+                                    onClick={() => { mcSoundManager.play('click'); window.print(); }} 
+                                    className="mc-btn py-2.5 px-2 flex flex-col items-center justify-center text-white text-[10px] md:text-xs font-bold gap-1">
+                                    <span className="text-lg">📜</span>
+                                    <span>{t.printScroll}</span>
+                                </button>
+                                <button 
+                                    onClick={() => { mcSoundManager.play('click'); setShowInstallModal(true); }} 
+                                    className="mc-btn py-2.5 px-2 flex flex-col items-center justify-center text-white text-[10px] md:text-xs font-bold gap-1">
+                                    <span className="text-lg">📲</span>
+                                    <span>{t.addToHotbar}</span>
+                                </button>
+                                <div className="mc-panel-dark py-2.5 px-2 flex flex-col items-center justify-center text-stone-300 text-[10px] md:text-xs font-bold gap-1">
+                                    <span className="text-lg">🗡️</span>
+                                    <span>Sophia Wong</span>
+                                </div>
+                            </div>
+                            
+                            <div className="text-[11px] font-mono text-stone-400">
+                                <span id="busuanzi_container_site_uv">
+                                    {t.serverAdventurers} <span id="busuanzi_value_site_uv" className="font-bold text-amber-400">...</span>
+                                </span>
+                            </div>
+                        </footer>
+
+                        {gameWon && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+                                <div className="mc-panel p-6 md:p-8 max-w-md w-full text-center relative border-4 border-black">
+                                    <div className="flex justify-center mb-3">
+                                        <div className="w-16 h-16 bg-amber-400 border-2 border-black flex items-center justify-center text-4xl shadow-md">
+                                            🏆
+                                        </div>
+                                    </div>
+                                    <h2 className="text-2xl md:text-3xl font-black font-pixel text-amber-800 mb-2 drop-shadow-sm">
+                                        {t.achievementGet}
+                                    </h2>
+                                    <p className="font-bold text-stone-900 text-base mb-1">
+                                        {t.vocabMaster}
+                                    </p>
+                                    <p className="text-stone-700 text-sm mb-6 leading-relaxed">
+                                        {t.winMessage1} <br/>
+                                        <span className="font-black text-black">"{currentLesson.isCustom ? currentLesson.name : (lang === 'zh' ? currentLesson.nameZh : currentLesson.nameEn)}"</span>!<br/>
+                                        {t.winMessage2} <span className="font-pixel text-amber-900 text-lg font-black">{moves}</span>.
+                                    </p>
+                                    <button 
+                                        onClick={() => { mcSoundManager.play('click'); initializeGame(); }} 
+                                        className="mc-btn-green w-full text-white font-pixel text-xs py-4 shadow-xl tracking-wider">
+                                        {t.startAnother}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {showInstallModal && <InstallGuideModal onClose={() => setShowInstallModal(false)} lang={lang} />}
+                        {showCustomModal && (
+                            <CustomLessonModal 
+                                onClose={() => setShowCustomModal(false)} 
+                                onSave={handleSaveCustomLesson} 
+                                initialData={editingLesson}
+                                lang={lang}
+                            />
+                        )}
+                        {showDeleteModal && (
+                            <DeleteConfirmModal 
+                                onClose={() => setShowDeleteModal(false)} 
+                                onConfirm={performDelete} 
+                                lang={lang}
+                            />
+                        )}
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
