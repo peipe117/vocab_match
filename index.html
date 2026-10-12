@@ -453,7 +453,9 @@
                 printSubtitle1: "Total",
                 printSubtitle2: "words,",
                 printSubtitle3: "cards (Cut along dashed lines)",
-                designer: "Designed by Sophia Wong"
+                designer: "Designed by Sophia Wong",
+                share: "🔗 Share",
+                copied: "✅ Copied!"
             },
             zh: {
                 title: "生字翻翻樂",
@@ -501,7 +503,9 @@
                 printSubtitle1: "共",
                 printSubtitle2: "個生字，計",
                 printSubtitle3: "張方塊卡牌 (請沿虛線裁剪)",
-                designer: "Sophia Wong 教具設計"
+                designer: "Sophia Wong 教具設計",
+                share: "🔗 分享",
+                copied: "✅ 已複製!"
             }
         };
 
@@ -732,6 +736,7 @@
             const [editingLesson, setEditingLesson] = useState(null);
             const [shakingCards, setShakingCards] = useState(null);
             const [isVoiceMuted, setIsVoiceMuted] = useState(false); // TTS State
+            const [copied, setCopied] = useState(false);
 
             const t = TRANSLATIONS[lang];
 
@@ -745,15 +750,52 @@
             }, []);
 
             useEffect(() => {
+                let loadedLessons = [...DEFAULT_LESSONS];
                 const savedLessons = localStorage.getItem('custom_lessons');
                 if (savedLessons) {
                     try {
                         const parsed = JSON.parse(savedLessons);
-                        setLessons([...DEFAULT_LESSONS, ...parsed]);
+                        loadedLessons = [...loadedLessons, ...parsed];
                     } catch(e) {
                         console.error(e);
                     }
                 }
+
+                // 檢查網址列是否有分享參數 (lesson 或 data)
+                const params = new URLSearchParams(window.location.search);
+                const dataParam = params.get('data');
+                const lessonParam = params.get('lesson');
+
+                if (dataParam) {
+                    try {
+                        // 解碼 Base64 並解析自訂課程
+                        const decodedStr = decodeURIComponent(atob(dataParam));
+                        const customLesson = JSON.parse(decodedStr);
+                        customLesson.id = Date.now(); // 賦予新 ID 避免衝突
+                        customLesson.isCustom = true;
+                        
+                        loadedLessons.push(customLesson);
+                        
+                        // 儲存到本地，讓使用者下次進來還能玩到這個分享的課程
+                        const customOnly = loadedLessons.filter(l => l.isCustom);
+                        localStorage.setItem('custom_lessons', JSON.stringify(customOnly));
+                        
+                        setCurrentLessonId(customLesson.id);
+
+                        // 清除網址列參數，保持畫面乾淨
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    } catch (e) {
+                        console.error("Failed to parse shared lesson", e);
+                    }
+                } else if (lessonParam) {
+                    // 若為內建課程分享
+                    const id = parseInt(lessonParam, 10);
+                    if (loadedLessons.some(l => l.id === id)) {
+                        setCurrentLessonId(id);
+                    }
+                }
+
+                setLessons(loadedLessons);
             }, []);
 
             useEffect(() => {
@@ -767,6 +809,35 @@
             const totalPairs = useMemo(() => {
                 return parseLessonWords(String(currentLesson.words || "")).length;
             }, [currentLesson]);
+
+            const handleShare = () => {
+                mcSoundManager.play('click');
+                const baseUrl = window.location.origin + window.location.pathname;
+                let shareUrl = baseUrl;
+                
+                // 判斷是否為自訂課程，若是則編碼文字資料，否則直接附上 ID
+                if (currentLesson.isCustom) {
+                    const dataToEncode = { name: currentLesson.name, words: currentLesson.words };
+                    const dataStr = btoa(encodeURIComponent(JSON.stringify(dataToEncode)));
+                    shareUrl += `?data=${dataStr}`;
+                } else {
+                    shareUrl += `?lesson=${currentLesson.id}`;
+                }
+
+                // 透過傳統 textarea 方式複製，避免 iFrame 阻擋寫入剪貼簿
+                const textArea = document.createElement("textarea");
+                textArea.value = shareUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
+                document.body.removeChild(textArea);
+            };
 
             const handleSaveCustomLesson = (id, name, words) => {
                 let newLessons;
@@ -997,9 +1068,9 @@
                                     <button 
                                         onClick={() => { mcSoundManager.play('click'); setLang(lang === 'zh' ? 'en' : 'zh'); }}
                                         className="flex items-center gap-1 bg-sky-200 border-2 border-black px-3 py-1.5 shadow-inner mc-btn cursor-pointer"
-                                        title="Switch Language"
+                                        title={lang === 'zh' ? "Switch to English" : "切換至中文"}
                                     >
-                                        <span className="text-xs font-black text-stone-800">🌐 {lang === 'zh' ? 'EN' : '中'}</span>
+                                        <span className="text-xs font-black text-stone-800">🌐 {lang === 'zh' ? 'English' : '中文'}</span>
                                     </button>
 
                                     <button 
@@ -1008,6 +1079,14 @@
                                         title="Toggle Voice"
                                     >
                                         <span className="text-xs font-black text-stone-800">{isVoiceMuted ? t.voiceMuted : t.voiceOn}</span>
+                                    </button>
+
+                                    <button 
+                                        onClick={handleShare}
+                                        className="flex items-center gap-1 bg-amber-200 border-2 border-black px-3 py-1.5 shadow-inner mc-btn cursor-pointer"
+                                        title="Share Link"
+                                    >
+                                        <span className="text-xs font-black text-stone-800">{copied ? t.copied : t.share}</span>
                                     </button>
 
                                     <div className="flex items-center gap-2 bg-stone-300 border-2 border-black px-3 py-1.5 shadow-inner">
